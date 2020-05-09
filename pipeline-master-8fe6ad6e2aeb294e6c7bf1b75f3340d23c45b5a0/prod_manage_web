@@ -1,0 +1,109 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'clean'
+    sh"""
+        cd $workspace
+        rm -rf *          
+       """
+ stage 'checkout'
+
+     dir('parent'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+     dir('base-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-api.git'        
+    }
+     dir('base-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-center.git'        
+    }
+ 
+     dir('electricity_supplier'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/electricity_supplier.git'        
+    }
+ 
+     dir('electricity_supplier_order'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/electricity_supplier_order.git'        
+    }
+ 
+         dir('workflow'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/workflow.git'        
+    }
+
+     dir('business_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_user.git'        
+    }
+     dir('manage_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/manage_user.git'        
+    }
+     dir('cgd_manager_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/cgd_manager_user.git'        
+    }
+
+
+
+    
+           
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Pprod
+ 
+        cd $workspace/electricity_supplier
+       /usr/local/maven/bin/mvn clean install -Pprod  
+       cd $workspace/electricity_supplier/electricity_supplier-api
+       /usr/local/maven/bin/mvn clean install -Pprod  
+ 
+        cd $workspace/electricity_supplier_order
+       /usr/local/maven/bin/mvn clean install -Pprod
+ 
+               cd $workspace/workflow
+       /usr/local/maven/bin/mvn clean install -Pprod   
+        cd $workspace/business_user
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/manage_user
+       /usr/local/maven/bin/mvn clean install -Pprod
+
+      
+       
+       
+              
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=prod
+    mo=manage_user-web
+
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 52f2c25b-9fb6-415e-a8b8-9ef4c56a54b1 http://172.16.5.4/$en/$mo/manage_user-web.war
+'''
+sh"""
+sleep 20
+  
+
+        cd  /jenkins/scripts/projects/cgd_manager_user/
+        rm -rf cgd_manager_user
+        rm -f cgd_manager_user.tar
+        mkdir cgd_manager_user
+        
+        cp -R $workspace/cgd_manager_user/html_module/dev/* cgd_manager_user        
+        tar -cf cgd_manager_user.tar cgd_manager_user
+
+     		ansible GD-MANAGER -m unarchive -a 'src=/jenkins/scripts/projects/cgd_manager_user/cgd_manager_user.tar dest=/tmp/ copy=yes mode=0755 owner=admin group=admin'
+				ansible GD-MANAGER -m shell -a 'rm -rf /home/admin/app/52f2c25b-9fb6-415e-a8b8-9ef4c56a54b1/manage_user-web/operation/*'
+				ansible GD-MANAGER -m shell -a '/bin/cp -R /tmp/cgd_manager_user/* /home/admin/app/52f2c25b-9fb6-415e-a8b8-9ef4c56a54b1/manage_user-web/operation'
+				ansible GD-MANAGER -m shell -a '/bin/chown -R admin:admin /home/admin/app/52f2c25b-9fb6-415e-a8b8-9ef4c56a54b1/manage_user-web/operation'
+
+"""
+}

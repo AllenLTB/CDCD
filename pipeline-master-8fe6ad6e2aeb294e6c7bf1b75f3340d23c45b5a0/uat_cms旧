@@ -1,0 +1,39 @@
+node () {
+def workspace = pwd()
+ stage 'checkout'
+
+     dir('cms'){
+          git branch:  'cgd_prod', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-cms_dev/cms.git'        
+    }
+
+
+    
+    
+           
+stage 'Build'
+    sh"""
+       java -version 
+        cd $workspace/cms
+        /usr/local/maven/bin/mvn clean install -Puat
+     
+               
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=UAT
+    mo=cms
+
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		mv /jen_data/$en/$mo/jspxcms-7.0.1.war /jen_data/$en/$mo/jspxcms.war
+	    java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 9a339de5-ec89-4f26-9b3d-f5dbb34b3d19 http://10.0.12.9/$en/$mo/jspxcms.war
+
+'''
+
+
+}

@@ -1,0 +1,44 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+ stage 'checkout'
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+    
+    dir('precise_service'){
+        git branch: release_branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/precise_service.git'        
+    }
+    
+    
+           
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+
+        cd $workspace/precise_service/precise_service-center
+       /usr/local/maven/bin/mvn clean install -U -Pprod
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=prod
+    mo=prod_precise_service
+
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy f45250fe-ea26-48c8-9f3a-dea4a26e0bac  http://10.0.2.9/$en/$mo/precise_service-center.war
+
+'''
+
+
+}

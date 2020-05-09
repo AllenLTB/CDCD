@@ -1,0 +1,35 @@
+pipeline {
+	agent any
+    
+	stages {
+		stage('test') {
+			steps {
+                echo 'test'
+			}
+			
+			post {
+	        	always {
+	        		echo "post condition executed: always ..."
+	        	}
+	        	changed {
+	        		echo "post condition executed: changed ..."
+	        	}
+	        	aborted {
+	        		echo "post condition executed: aborted ..."
+	        	}
+        	}
+		}
+	}
+	
+	post {
+    always {
+        echo "post condition executed: always ..."
+    }
+    changed {
+        echo "post condition executed: changed ..."
+    }
+    aborted {
+        echo "post condition executed: aborted ..."
+    }
+    }
+}

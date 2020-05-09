@@ -1,0 +1,93 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'clean'
+
+       
+ stage 'checkout'
+
+     dir('parent'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+     dir('base-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-api.git'        
+    }
+     dir('base-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-center.git'        
+    }
+ 
+     dir('electricity_supplier'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/electricity_supplier.git'        
+    }
+ 
+     dir('electricity_supplier_order'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/electricity_supplier_order.git'        
+    }
+ 
+     dir('workflow'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/workflow.git'        
+    }
+
+
+     dir('business_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_user.git'        
+    }
+     dir('manage_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/manage_user.git'        
+    }
+     dir('cgd_manager_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/cgd_manager_user.git'        
+    }
+
+
+
+    
+           
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Ptest
+ 
+        cd $workspace/electricity_supplier
+       /usr/local/maven/bin/mvn clean install -Ptest  
+       cd $workspace/electricity_supplier/electricity_supplier-api
+       /usr/local/maven/bin/mvn clean install -Ptest  
+ 
+        cd $workspace/electricity_supplier_order
+       /usr/local/maven/bin/mvn clean install -Ptest 
+ 
+        cd $workspace/workflow/workflow-api
+       /usr/local/maven/bin/mvn clean install -Ptest  
+         
+        cd $workspace/business_user/business_user-api
+       /usr/local/maven/bin/mvn clean install -Ptest
+       cd $workspace/manage_user
+       /usr/local/maven/bin/mvn clean install -Ptest
+    
+       """
+
+stage 'docker'
+    sh'''
+    
+    fn=$(date +%m%d%H%M)
+    en=TEST_DOCKER
+    mo=manage_user-web
+    
+    touch /jen_data/$en/$mo/q.war
+    mkdir -p /jen_data/$en/$mo/backup/$fn
+    mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+    
+    
+    find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+    mv /jen_data/$en/$mo/manage_user-web.war /jen_data/$en/$mo/ROOT.war
+    ansible GD-MANAGER_docker -m copy -a 'src=/jen_data/TEST_DOCKER/manage_user-web/ROOT.war dest=/home/tomcattest/docker_file/'
+    ansible GD-MANAGER_docker -m shell -a 'cd /home/tomcattest/docker_file;sudo nohup ./start.sh &'
+    
+    '''
+
+}

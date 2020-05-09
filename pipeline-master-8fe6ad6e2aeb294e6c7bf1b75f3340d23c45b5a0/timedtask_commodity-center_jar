@@ -1,0 +1,41 @@
+node () {
+def workspace = pwd()
+def branch = 'mvn_refactor'
+def CATALINA_HOME='/taobao-tomcat/timeJob'
+
+
+
+ stage 'checkout'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+    }
+
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+
+    dir('timedtask_commodity'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/timedtask_commodity.git'        
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+        cd $workspace/timedtask_commodity
+       /usr/local/maven/bin/mvn clean install -Ptest
+       """
+
+stage 'tomcat'
+    sh"""
+        JENKINS_NODE_COOKIE=dontKillMe
+        
+        rm -rf ${CATALINA_HOME}/timedtask_commodity-center-1.0.0-SNAPSHOT.jar
+        cp -rf $workspace/timedtask_commodity/timedtask_commodity-center/target/timedtask_commodity-center-1.0.0-SNAPSHOT.jar ${CATALINA_HOME}/
+        ${CATALINA_HOME}/restartTimedtask.sh
+    """
+}

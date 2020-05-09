@@ -1,0 +1,67 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+    dir('business_order'){
+          git branch: 'sx-order-09-15' , credentialsId: 'jenkins', url: 'git@47.94.250.239:cgd-eCommerce_dev/business_order.git'
+    }
+      dir('base-api'){
+          git branch: branch , credentialsId: 'jenkins', url: 'git@47.94.250.239:cgd-base_dev/base-api.git'
+    }
+    dir('business_plan'){
+          git branch: branch , credentialsId: 'jenkins', url: 'git@47.94.250.239:cgd-eCommerce_dev/business_plan.git'
+    }
+    dir('business_inquiry'){
+          git branch: branch , credentialsId: 'jenkins', url: 'git@47.94.250.239:cgd-eCommerce_dev/business_inquiry.git'
+    }
+     dir('srm-parent'){
+          git branch: 'uat' , credentialsId: 'jenkins', url: 'git@47.94.250.239:SRM/srm-parent.git'
+    }
+	
+
+
+
+stage 'Build'
+    sh"""
+    cd $workspace/srm-parent
+    /usr/local/maven/bin/mvn clean install -Puat
+       
+    #*************api打包**************
+cd $workspace/srm-parent/srm-common
+       /usr/local/maven/bin/mvn clean install -Puat
+cd $workspace/srm-parent/srm-middle-parent/srm-middle-api
+       /usr/local/maven/bin/mvn clean install -Puat
+cd $workspace/srm-parent/srm-file-parent/srm-file-api
+       /usr/local/maven/bin/mvn clean install -Puat
+cd $workspace/srm-parent/srm-bus-parent/srm-bus-api
+       /usr/local/maven/bin/mvn clean install -Puat
+cd $workspace/srm-parent/srm-ws-parent/srm-ws-api
+       /usr/local/maven/bin/mvn clean install -Puat
+    #*********父工程打包***********
+cd $workspace/srm-parent/srm-bus-parent 
+       /usr/local/maven/bin/mvn clean install -Puat
+cd $workspace/srm-parent/srm-file-parent
+       /usr/local/maven/bin/mvn clean install -Puat
+cd $workspace/srm-parent/srm-middle-parent
+       /usr/local/maven/bin/mvn clean install -Puat
+cd $workspace/srm-parent/srm-ws-parent
+       /usr/local/maven/bin/mvn clean install -Puat
+
+
+            """
+stage 'EDAS'
+    sh'''
+    fn=$(date +%m%d%H%M)
+    en=UAT
+    mo=uat-srm_bus
+    mkdir -p /jen_data/$en/$mo/backup/$fn
+    find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+    cp /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+	chmod 777 /jen_data/$en/$mo/*.war
+    java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 6cc3da85-ede3-41c2-85ad-2cadd162ee68  http://10.0.12.9/$en/$mo/srm-bus-server-1.0.0-SNAPSHOT.war
+    '''
+}

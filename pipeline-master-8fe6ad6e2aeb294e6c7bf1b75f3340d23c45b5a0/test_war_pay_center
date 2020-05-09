@@ -1,0 +1,44 @@
+node () {
+def workspace = pwd()
+def branch = 'test'
+
+stage 'pull'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+    }
+    
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'
+    }
+
+    dir('pay_center'){
+        git branch: release_branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/pay_center.git'
+    }
+
+
+stage 'build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+        cd $workspace/pay_center/paycenter-center
+       /usr/local/maven/bin/mvn clean install -Ptest -U
+    """
+
+stage 'deploy-edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=TEST
+        mo=test_pay_center
+        workspace=/var/lib/jenkins/workspace/test_war_pay_center
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		cd  $workspace/pay_center/paycenter-center/target/paycenter-center
+		jar -cfM0 /mydata/upload/paycenter-center.war ./*
+		find /mydata/upload -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy b4d3f440-2d2a-464a-a1e4-c7319fa0229c  http://10.0.2.9/$en/$mo/paycenter-center.war
+    '''
+}

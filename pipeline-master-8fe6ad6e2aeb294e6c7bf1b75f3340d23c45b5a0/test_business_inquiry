@@ -1,0 +1,105 @@
+node () {
+def workspace = pwd()
+
+stage 'checkout'
+    dir('parent'){
+        git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+    
+    dir('base-api'){
+        git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-api.git'        
+    }
+    
+    dir('base-center'){
+        git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-center.git'        
+    }
+    
+  	dir('search'){
+        git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/search.git'        
+    }
+    
+     dir('notify'){
+         git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/notify.git'        
+    }
+
+     dir('business_user'){
+         git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_user.git'        
+    }
+ 
+     dir('manage_user'){
+         git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/manage_user.git'        
+    }
+     dir('workflow'){
+         git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/workflow.git'        
+    }
+    
+    dir('business_commodity'){
+        git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_commodity.git'        
+    }
+
+     dir('business_plan'){
+         git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_plan.git'        
+    }
+    dir('business_inquiry'){
+        git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_inquiry.git'        
+    }
+	dir('inquiry'){
+        git branch:  'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/inquiry.git'        
+    }
+    dir('business_interface'){
+        git branch:  'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_interface.git'        
+    }
+    
+           
+stage 'Build'
+    sh"""
+    
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/search
+       /usr/local/maven/bin/mvn clean install -Ptest
+       
+        cd $workspace/business_commodity/business_commodity-api
+       /usr/local/maven/bin/mvn clean install -U -Ptest 
+       
+        cd $workspace/business_plan/business_plan-api
+       /usr/local/maven/bin/mvn clean install -Ptest	 
+        cd $workspace/business_inquiry/business_inquiry-api
+       /usr/local/maven/bin/mvn clean install -Ptest       
+        cd $workspace/business_interface
+       /usr/local/maven/bin/mvn clean install -Ptest    
+
+        cd $workspace/business_plan
+       /usr/local/maven/bin/mvn clean install -Ptest	   
+        cd $workspace/business_inquiry
+       /usr/local/maven/bin/mvn clean install -Ptest 		    
+        cd $workspace/workflow/workflow-api
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/notify
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/business_user/business_user-api
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/manage_user/manage_user-api
+       /usr/local/maven/bin/mvn clean install -Ptest
+		cd $workspace/inquiry
+       /usr/local/maven/bin/mvn clean install -Ptest	
+	                 
+    """
+
+stage 'edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=TEST
+        mo=test_business_inquiry
+
+        mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 8fe5df3e-247b-4cb9-9dfd-0a9f555805b5  http://10.0.2.9/$en/$mo/inquiry.war
+    '''
+}  

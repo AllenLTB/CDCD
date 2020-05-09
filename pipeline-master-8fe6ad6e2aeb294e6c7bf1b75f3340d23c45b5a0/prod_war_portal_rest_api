@@ -1,0 +1,74 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+ stage 'checkout'
+    dir('config'){
+    	git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/config.git'        
+	}
+    dir('gdfr'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/gdfr.git'        
+    }
+
+    dir('parent'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+
+     dir('business_portal'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/portal_rest_api.git'
+    }
+    sh "cd $workspace/business_portal;git checkout $release_tag"
+    
+    dir('cgd_portal'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/cgd_portal.git'        
+    }
+    
+    dir('cgd_portal_vue'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/cgd_portal_vue.git'        
+    }
+
+
+stage 'check_snapshot'
+    def exitValue = sh(script: "ls $workspace/business_portal/target/business_portal/WEB-INF/lib |grep 'SNAPSHOT.jar'", returnStatus: true)
+    echo "return exitValue :${exitValue}"
+    
+    if(exitValue == 0){
+        error("ERROR：此版本包含SNAPSHOT软件包，不允许使用SNAPSHOT")
+    }
+
+
+stage 'Build'
+    sh"""
+    
+    # cd $workspace
+    #    cp -r ./gdfr $workspace/business_portal/src/main/webapp/WEB-INF/classes/
+   #  cd $workspace/report_center/src/main/webapp/WEB-INF
+    #   cp -r ./plugins $workspace/business_portal/src/main/webapp/WEB-INF/
+    #   cp -r ./reportlets $workspace/business_portal/src/main/webapp/WEB-INF/
+    #    cp -r ./resources $workspace/business_portal/src/main/webapp/WEB-INF/
+        
+
+       cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+
+        cd $workspace/business_portal
+       /usr/local/maven/bin/mvn clean install -Pprod
+       """
+      
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=prod
+    mo=prod-portal-rest-api
+
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		mkdir -p /jenkins/scripts/projects/cgd_portal_deploy/cgd_portal_deploy
+		mv /jenkins/scripts/projects/cgd_portal_deploy/cgd_portal_deploy /jenkins/scripts/projects/cgd_portal_deploy/backup/cgd_portal_deploy$fn
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 3c31832d-efdc-475d-9680-5c6142e339ab http://172.16.5.4/$en/$mo/portal_rest_api.war
+'''
+}

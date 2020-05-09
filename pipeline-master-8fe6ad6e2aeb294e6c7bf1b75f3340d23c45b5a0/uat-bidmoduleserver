@@ -1,0 +1,56 @@
+node ('master') {
+def workspace = pwd()
+def branch = 'uat'
+
+
+
+
+ stage 'checkout'
+    dir('platform-utils'){
+          git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/platform-utils.git'
+    }
+    dir('user-module-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/user-module-api.git'
+    }
+    dir('common-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/common-api.git'
+    }
+    dir('bid-module-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/bid-module-api.git'
+    }
+    dir('bid-module-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/bid-module-center.git'
+    }
+    dir('bid-module-grpc'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/bid-module-grpc.git'
+    }
+    dir('bid-module-server'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/bid-module-server.git'
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/platform-utils
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/common-api
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/user-module-api
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/bid-module-api
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/bid-module-center
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/bid-module-grpc
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/bid-module-server
+       /usr/local/maven/bin/mvn clean install -Puat
+       
+            """
+
+stage 'copy'
+    sh"""
+    ansible root-10.0.15.155 -m copy -a "src=/var/lib/jenkins/workspace/uat-bidmoduleserver/bid-module-server/target/bid-module-server.war  dest=/home/admin/tmp mode=0755"
+    """
+}

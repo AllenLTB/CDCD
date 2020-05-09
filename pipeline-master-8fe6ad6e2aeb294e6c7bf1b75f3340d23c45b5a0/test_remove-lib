@@ -1,0 +1,12 @@
+node () {
+def workspace = pwd()
+
+stage 'removelib'
+sh"""
+rm -rf /usr/local/maven/repository/com/cgd/business_commodity*
+rm -rf /usr/local/maven/repository/com/cgd/electricity_supplier_comm*
+rm -rf /usr/local/maven/repository/com/ohaotian
+rm -rf /usr/local/maven/repository/com/cgd/business_order-x*
+
+"""
+}

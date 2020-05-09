@@ -1,0 +1,49 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'checkout'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/config.git'        
+	}
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+
+    dir('plan'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/plan.git'        
+    }
+    sh "cd $workspace/plan;git checkout $release_tag"
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+       
+        cd $workspace/plan
+       /usr/local/maven/bin/mvn clean install -Pprod
+    """
+
+stage 'check_snapshot'
+    def exitValue = sh(script: "ls $workspace/plan/target/plan/WEB-INF/lib |grep 'SNAPSHOT.jar'", returnStatus: true)
+    echo "return exitValue :${exitValue}"
+    
+    if(exitValue == 0){
+        error("ERROR：此版本包含SNAPSHOT软件包，不允许使用SNAPSHOT")
+    }
+
+stage 'edas'       
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=prod
+        mo=prod_business_plan
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 50b77368-85e6-4c74-afa0-4adcdd83e4d7  http://172.16.5.4/$en/$mo/plan.war 
+    '''
+}

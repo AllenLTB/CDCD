@@ -1,0 +1,45 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'checkout'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+	}
+	
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+
+
+    dir('timedtask_user'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/timedtask_user.git'        
+    }
+    sh "cd $workspace/timedtask_user;git checkout $release_tag"
+
+stage 'build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pnewuat
+
+		cd $workspace/timedtask_user/
+       /usr/local/maven/bin/mvn clean install -Pnewuat
+    """
+
+stage 'deploy'
+sh'''
+        fn=$(date +%m%d%H%M)
+        en=NEWUAT
+        mo=newuat_timedtask_user_center
+        workspace=/var/lib/jenkins/workspace/newuat_war_timedtask_user_center
+        JENKINS_NODE_COOKIE=dontKillMe
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.jar
+		mv  /jen_data/$en/$mo/*.jar /jen_data/$en/$mo/backup/$fn/
+		cp $workspace/timedtask_user/timedtask_user-center/target/timedtask_user-center-1.0.0-SNAPSHOT.jar /jen_data/$en/$mo
+
+		ansible admin-10.0.12.75 -m copy -a "src=/jen_data/$en/$mo/timedtask_user-center-1.0.0-SNAPSHOT.jar dest=/home/admin/timeUserJob/ owner=admin group=admin mode=775"
+		ansible admin-10.0.12.75 -m shell -a "/home/admin/timeUserJob/restartTimedtask.sh restart"
+    '''
+}

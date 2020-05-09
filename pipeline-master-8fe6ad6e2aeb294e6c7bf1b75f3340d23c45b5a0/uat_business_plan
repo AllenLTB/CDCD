@@ -1,0 +1,93 @@
+node () {
+def workspace = pwd()
+ stage 'checkout'
+
+     dir('parent'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+     dir('base-api'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-api.git'        
+    }
+     dir('base-center'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-center.git'        
+    }
+    	dir('search'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/search.git'        
+    } 
+     dir('notify'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/notify.git'        
+    }
+     dir('business_user'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_user.git'        
+    } 
+     dir('manage_user'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/manage_user.git'        
+    }
+     dir('workflow'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/workflow.git'        
+    }
+     dir('business_plan'){
+          git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_plan.git'        
+    }
+    dir('business_inquiry'){
+          git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_inquiry.git'        
+    }    
+    dir('plan'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/plan.git'        
+    }
+
+
+    
+           
+stage 'Build'
+    sh"""
+
+	
+	
+	
+ cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/search
+       /usr/local/maven/bin/mvn clean install -Puat
+       
+        cd $workspace/business_inquiry/business_inquiry-api
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/business_plan/business_plan-api
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/workflow/workflow-api
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/business_plan
+       /usr/local/maven/bin/mvn clean install -Puat	   
+        cd $workspace/business_inquiry
+       /usr/local/maven/bin/mvn clean install -Puat 		    
+        cd $workspace/notify
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/business_user/business_user-api
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/manage_user/manage_user-api
+       /usr/local/maven/bin/mvn clean install -Puat
+				cd $workspace/plan
+       /usr/local/maven/bin/mvn clean install -Puat	 
+       """
+       
+       
+stage 'edas'       
+       
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=UAT
+    mo=uat_plan
+
+	
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 04aa139c-463c-40ba-a67b-aa8a35f2619e  http://10.0.12.9/$en/$mo/plan.war 
+'''
+}

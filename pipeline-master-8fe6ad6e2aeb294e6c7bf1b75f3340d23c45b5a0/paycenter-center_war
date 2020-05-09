@@ -1,0 +1,40 @@
+node () {
+def workspace = pwd()
+def branch = 'mvn_refactor'
+def CATALINA_HOME = '/taobao-tomcat/paycenter-center_war'
+
+
+
+ stage 'checkout'
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+
+    dir('pay_center'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/pay_center.git'
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pdev
+
+        cd $workspace/pay_center/paycenter-center
+       /usr/local/maven/bin/mvn clean install -Pdev
+       """
+
+
+
+stage 'tomcat'
+    sh"""
+        JENKINS_NODE_COOKIE=dontKillMe
+
+        ${CATALINA_HOME}/bin/shutdown.sh
+        rm -rf ${CATALINA_HOME}/deploy/ROOT
+        unzip $workspace/pay_center/paycenter-center/target/paycenter-center.war -d ${CATALINA_HOME}/deploy/ROOT
+        ${CATALINA_HOME}/bin/startup.sh
+    """
+}

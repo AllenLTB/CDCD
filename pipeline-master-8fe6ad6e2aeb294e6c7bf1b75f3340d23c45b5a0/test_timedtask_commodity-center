@@ -1,0 +1,61 @@
+node () {
+def workspace = pwd()
+def branch = 'test'
+ stage 'checkout'
+
+     dir('parent'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+     dir('base-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-api.git'        
+    }
+     dir('base-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-center.git'        
+    }
+
+
+     dir('timedtask_commodity'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/timedtask_commodity.git'        
+    }
+
+    
+           
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Ptest
+ 
+        cd $workspace/timedtask_commodity
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+       
+              
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=TEST
+    mo=test_timedtask_commodity-center
+		
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.jar
+		mv  /jen_data/$en/$mo/*.jar /jen_data/$en/$mo/backup/$fn/
+		cp /usr/local/maven/repository/com/cgd/timedtask/timedtask_commodity-center/1.0.0-SNAPSHOT/timedtask_commodity-center-1.0.0-SNAPSHOT.jar  /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/timedtask_commodity-center-1.0.0-SNAPSHOT.jar
+  	     
+        scp /jen_data/TEST/test_timedtask_commodity-center/timedtask_commodity-center-1.0.0-SNAPSHOT.jar root@10.0.2.248:/home/admin/testJob/
+        ssh  10.0.2.248 'chown -R admin:admin /home/admin/testJob/timedtask_commodity-center-1.0.0-SNAPSHOT.jar'
+		ssh  10.0.2.248 'su - admin -c /home/admin/testJob/restartTimedtask.sh'
+
+
+  	     
+  	    
+'''
+
+
+}

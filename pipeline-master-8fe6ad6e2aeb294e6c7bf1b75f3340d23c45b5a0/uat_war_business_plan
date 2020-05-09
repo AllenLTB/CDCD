@@ -1,0 +1,40 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'pull'
+	dir('config'){
+    	git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+	}
+	
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+ 
+    dir('plan'){
+        git branch: release_branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/plan.git'        
+    }
+
+stage 'build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Puat
+
+		cd $workspace/plan
+       /usr/local/maven/bin/mvn clean install -Puat	 
+    """
+
+stage 'deploy-edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=UAT
+        mo=uat_business_plan
+        
+	    touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 04aa139c-463c-40ba-a67b-aa8a35f2619e  http://10.0.12.9/$en/$mo/plan.war 
+    '''
+}

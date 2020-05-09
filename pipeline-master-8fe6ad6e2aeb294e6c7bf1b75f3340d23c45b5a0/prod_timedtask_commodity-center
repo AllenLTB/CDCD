@@ -1,0 +1,68 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+ stage 'checkout'
+
+     dir('parent'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+     dir('base-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-api.git'        
+    }
+     dir('base-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-center.git'        
+    }
+
+
+
+     dir('timedtask_commodity'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/timedtask_commodity.git'        
+    }
+
+    
+           
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Pprod
+  
+        cd $workspace/timedtask_commodity
+       /usr/local/maven/bin/mvn clean install -Pprod 
+ 
+
+       
+              
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=prod
+    mo=prod_timedtask_commodity-center
+
+		touch /jen_data/$en/$mo/q.jar
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv  /jen_data/$en/$mo/*.jar /jen_data/$en/$mo/backup/$fn/
+		cp /usr/local/maven/repository/com/cgd/timedtask/timedtask_commodity-center/1.0.0-SNAPSHOT/timedtask_commodity-center-1.0.0-SNAPSHOT.jar  /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/timedtask_commodity-center-1.0.0-SNAPSHOT.jar
+  	     
+    sshpass -p 'vhPRqmLZEUJ2L9WV' scp -o stricthostkeychecking=no /jen_data/$en/$mo/timedtask_commodity-center-1.0.0-SNAPSHOT.jar admin@172.16.1.20:/home/admin/timeJob/			
+		sshpass -p 'vhPRqmLZEUJ2L9WV' ssh -o stricthostkeychecking=no admin@172.16.1.20 '/home/admin/timeJob/restartTimedtask.sh'
+
+    sshpass -p 'vhPRqmLZEUJ2L9WV' scp -o stricthostkeychecking=no /jen_data/$en/$mo/timedtask_commodity-center-1.0.0-SNAPSHOT.jar admin@172.16.1.21:/home/admin/timeJob/			
+		sshpass -p 'vhPRqmLZEUJ2L9WV' ssh -o stricthostkeychecking=no admin@172.16.1.21 '/home/admin/timeJob/restartTimedtask.sh'
+	     
+
+
+
+
+  	     
+  	    
+'''
+
+
+}

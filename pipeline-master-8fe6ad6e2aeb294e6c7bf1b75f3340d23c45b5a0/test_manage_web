@@ -1,0 +1,127 @@
+node () {
+def workspace = pwd()
+def branch = 'test'
+
+stage 'clean'
+    sh"""
+        cd $workspace
+        rm -rf *          
+       """
+       
+ stage 'checkout'
+
+     dir('parent'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+     dir('base-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-api.git'        
+    }
+     dir('base-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-center.git'        
+    }
+     dir('business_commodity'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_commodity.git'        
+    }
+ 
+     dir('electricity_supplier'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/electricity_supplier.git'        
+    }
+ 
+     dir('electricity_supplier_order'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/electricity_supplier_order.git'        
+    }
+ 
+     dir('workflow'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/workflow.git'        
+    }
+           dir('business_inquiry'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_inquiry.git'        
+    } 
+
+
+
+     dir('business_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_user.git'        
+    }
+     dir('manage_user'){
+          git branch: release_branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/manage_user.git'        
+    }
+     dir('cgd_manager_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/cgd_manager_user.git'        
+    }
+
+
+
+    
+           
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Ptest
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+cd $workspace/business_commodity
+    /usr/local/maven/bin/mvn clean install -U -Ptest
+ 
+        cd $workspace/electricity_supplier
+       /usr/local/maven/bin/mvn clean install -Ptest  
+       cd $workspace/electricity_supplier/electricity_supplier-api
+       /usr/local/maven/bin/mvn clean install -Ptest  
+ 
+        cd $workspace/electricity_supplier_order
+       /usr/local/maven/bin/mvn clean install -Ptest
+       
+         cd $workspace/business_inquiry/business_inquiry-api 
+       /usr/local/maven/bin/mvn clean install -Ptest 
+        cd $workspace/workflow/workflow-api
+       /usr/local/maven/bin/mvn clean install -Ptest  
+         
+        cd $workspace/business_user/business_user-api
+       /usr/local/maven/bin/mvn clean install -Ptest
+       cd $workspace/manage_user
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+
+
+       
+       
+              
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=TEST
+    mo=test_cgd_manager_user
+
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 4ad48bf0-aaeb-458a-9c5f-f02f06b3ddbe http://10.0.2.9/$en/$mo/manage_user-web.war
+'''
+sh"""
+sleep 60
+  
+
+        cd  /jenkins/scripts/projects/cgd_manager_user/
+        rm -rf cgd_manager_user
+        rm -f cgd_manager_user.tar
+        mkdir cgd_manager_user
+        
+        cp -R $workspace/cgd_manager_user/html_module/dev/* cgd_manager_user        
+        tar -cf cgd_manager_user.tar cgd_manager_user
+
+     		ansible GD-MANAGER -m unarchive -a 'src=/jenkins/scripts/projects/cgd_manager_user/cgd_manager_user.tar dest=/tmp/ copy=yes mode=0755 owner=admin group=admin'
+				ansible GD-MANAGER -m shell -a '/bin/cp -R /tmp/cgd_manager_user/* /home/admin/app/4ad48bf0-aaeb-458a-9c5f-f02f06b3ddbe/manage_user-web/operation'
+				ansible GD-MANAGER -m shell -a '/bin/chown -R admin:admin /home/admin/app/4ad48bf0-aaeb-458a-9c5f-f02f06b3ddbe/manage_user-web/operation'
+
+
+           
+       """
+
+}

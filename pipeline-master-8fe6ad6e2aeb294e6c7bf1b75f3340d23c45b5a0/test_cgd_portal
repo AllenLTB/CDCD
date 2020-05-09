@@ -1,0 +1,21 @@
+node () {
+def workspace = pwd()
+def branch = 'test'
+
+stage 'checkout'
+    dir('cgd_portal'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/cgd_portal.git'        
+    }
+
+stage 'Build'
+    sh"""
+        cd /jenkins/scripts/projects/cgd_portal_deploy/
+        rm -rf dev*
+        cp -R $workspace/cgd_portal/dev .
+        ./portal_static_web.sh
+        tar -cf dev.tar.gz dev
+        
+        ansible TEST-PORTAL-ROOT -m unarchive -a "src=/jenkins/scripts/projects/cgd_portal_deploy/dev.tar.gz dest=/tmp copy=yes mode=0755 owner=admin group=admin"
+        ansible TEST-PORTAL-ADMIN -m shell -a '/bin/cp -fR /tmp/dev/* /home/admin/app/c65f04e2-7320-4fcd-aef8-4823494b8ef0/business_portal/'
+    """
+}

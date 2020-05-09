@@ -1,0 +1,24 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+	dir('material-masterdata'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/material-masterdata.git'
+   }
+
+
+stage 'Build'
+    sh"""
+	   cd $workspace/material-masterdata
+       /usr/local/maven/bin/mvn clean install -Ppro
+         """
+stage 'PRE'
+    sh"""
+    rm -rf /var/lib/jenkins/workspace/prod-material-masterdata-step1/*
+    cp -f /var/lib/jenkins/workspace/prod-material-masterdata/material-masterdata/material-masterdata-server/target/materialmasterdataserver.war /var/lib/jenkins/workspace/prod-material-masterdata-step1/
+    """
+}

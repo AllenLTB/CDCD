@@ -1,0 +1,46 @@
+node ('master') {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+    dir('base-api'){
+          git branch: branch , credentialsId: 'jenkins', url: 'git@47.94.250.239:cgd-base_dev/base-api.git'
+    }
+    dir('business_plan'){
+          git branch: branch , credentialsId: 'jenkins', url: 'git@47.94.250.239:cgd-eCommerce_dev/business_plan.git'
+    }
+    dir('business_inquiry'){
+          git branch: branch , credentialsId: 'jenkins', url: 'git@47.94.250.239:cgd-eCommerce_dev/business_inquiry.git'
+    }
+     dir('srm-parent'){
+          git branch: 'uat' , credentialsId: 'jenkins', url: 'git@47.94.250.239:SRM/srm-parent.git'
+    }
+
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install 
+        cd $workspace/business_plan/business_plan-api
+       /usr/local/maven/bin/mvn clean install 
+	   cd $workspace/business_inquiry/business_inquiry-api
+       /usr/local/maven/bin/mvn clean install 
+	   cd $workspace/srm-parent/srm-common
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/srm-parent/srm-middle-parent
+       /usr/local/maven/bin/mvn clean install -Puat
+
+
+            """
+stage 'PRE'
+    sh"""
+    rm -rf /var/lib/jenkins/workspace/uat-srm_mid_step2/*
+    cp -f $workspace/srm-parent/srm-middle-parent/srm-middle-server/target/srm-middle-server.war /var/lib/jenkins/workspace/uat-srm_mid_step2/
+    """
+
+}

@@ -1,0 +1,84 @@
+node ('master') {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+    dir('platform-utils'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/platform-utils.git'
+    }
+    dir('user-module-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/user-module-api.git'
+    }
+    dir('common-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/common-api.git'
+    }
+    dir('common-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/common-center.git'
+    }
+    dir('common-grpc'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/common-grpc.git'
+    }
+    dir('user-module-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/user-module-center.git'
+    }
+    dir('user-module-grpc'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/user-module-grpc.git'
+    }
+    dir('frreport-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/frreport-api.git'
+    }
+    dir('frreport-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/frreport-center.git'
+    }
+    dir('frreport-grpc'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/frreport-grpc.git'
+    }
+    dir('invoke-bus-server-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/invoke-bus-server-api.git'
+    }
+    dir('base-platform-server'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/base-platform-server.git'
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/platform-utils
+       /usr/local/maven/bin/mvn clean install
+        cd $workspace/common-api
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/invoke-bus-server-api
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/common-center
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/user-module-api
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/common-grpc
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/user-module-center
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/user-module-grpc
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/frreport-api
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/frreport-center
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/frreport-grpc
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/base-platform-server
+       /usr/local/maven/bin/mvn clean install -Pinner
+
+            """
+            
+stage 'PRE'
+    sh"""
+    rm -rf /root/.jenkins/workspace/prod_baseplatformserver-step1/*
+    cp -f $workspace/base-platform-server/target/base-platform-server.war /root/.jenkins/workspace/prod_baseplatformserver-step1/
+    """
+
+
+}

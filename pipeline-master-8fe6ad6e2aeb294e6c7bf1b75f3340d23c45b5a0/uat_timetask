@@ -1,0 +1,60 @@
+node () {
+def workspace = pwd()
+ stage 'checkout'
+      dir('parent'){
+          git branch:   'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+     dir('base-api'){
+          git branch:   'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-api.git'        
+    }
+     dir('business_inquiry'){
+          git branch:   'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_inquiry.git'        
+    }
+     dir('base-center'){
+          git branch:   'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-center.git'        
+    } 
+     dir('electricity_supplier'){
+          git branch:   'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/electricity_supplier.git'        
+    }
+     dir('business_order'){
+          git branch:   'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_order.git'        
+    }   
+      dir('timedtask'){
+          git branch:   'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/timedtask.git'        
+    }
+
+           
+stage 'Build'
+    sh"""
+       cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/business_inquiry/business_inquiry-api
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/electricity_supplier
+       /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/business_order/business_order-api
+      /usr/local/maven/bin/mvn clean install -Puat
+       cd $workspace/timedtask
+       /usr/local/maven/bin/mvn clean install -Puat     
+ 
+   
+              
+       """
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=UAT
+    mo=timedtask
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 74caa5ef-16e0-4d41-b848-b128cafaa27d http://10.0.12.9/$en/$mo/timedtask-center.war
+'''
+
+}

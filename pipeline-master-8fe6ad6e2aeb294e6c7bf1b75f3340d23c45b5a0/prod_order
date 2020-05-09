@@ -1,0 +1,117 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'removelib'
+sh"""
+rm -rf /usr/local/maven/repository/com/cgd/business_order-xcenter
+rm -rf /usr/local/maven/repository/com/cgd/business_order-xapi
+
+"""
+
+
+ stage 'checkout'
+
+     dir('parent'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+     dir('base-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-api.git'        
+    }
+     dir('base-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-center.git'        
+    }
+		 dir('workflow'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/workflow.git'        
+    }  
+
+    dir('business_pay'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_pay.git'        
+    }
+     dir('electricity_supplier_order'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/electricity_supplier_order.git'        
+    }
+
+     dir('business_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_user.git'        
+    }
+     dir('manage_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/manage_user.git'        
+    }
+         dir('workflow'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/workflow.git'        
+    }
+      dir('business_commodity'){
+          git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_commodity.git'
+    }
+     dir('cgd_business_commodity'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/cgd_business_commodity.git'        
+    }
+     dir('control-jump'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/control-jump.git'        
+    }
+     dir('business_order'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_order.git'        
+    }
+      dir('order'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/order.git'        
+    }
+    dir('pay_center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance/pay_center.git'
+    }
+
+           
+stage 'Build'
+    sh"""
+
+      cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+  			cd $workspace/workflow/workflow-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Pprod  
+ 				cd $workspace/business_pay/business_pay-api
+       /usr/local/maven/bin/mvn clean install -Pprod 
+ 
+        cd $workspace/electricity_supplier_order
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/workflow/workflow-api
+       /usr/local/maven/bin/mvn clean install -Pprod       
+        cd $workspace/business_user/business_user-api
+       /usr/local/maven/bin/mvn clean install -Pprod  
+        cd $workspace/manage_user/manage_user-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/pay_center/paycenter-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+         cd $workspace/business_commodity/business_commodity-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/cgd_business_commodity/cgd_business_commodity-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/control-jump
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/business_order
+       /usr/local/maven/bin/mvn clean install -Pprod 
+       cd $workspace/order
+       /usr/local/maven/bin/mvn clean install -Pprod 
+       
+              
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=prod
+    mo=order
+
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 694b0dc8-d721-4dbc-b60b-08aa29fc2edc http://172.16.5.4/$en/$mo/order.war 
+'''
+
+
+}

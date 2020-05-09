@@ -1,0 +1,46 @@
+node () {
+def workspace = pwd()
+def branch = 'test'
+
+stage 'pull'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+    }
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+
+    dir('download_center'){
+        git branch: release_branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/download_center.git'        
+    }
+    
+stage 'build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+        cd $workspace/download_center
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+    """
+
+stage 'deploy-edas'
+    sh'''
+        JENKINS_NODE_COOKIE=dontKillMe
+        fn=$(date +%m%d%H%M)
+        en=TEST
+        mo=test_download_center
+        workspace=/var/lib/jenkins/workspace/test_war_download_center
+
+        mkdir -p /jen_data/$en/$mo/backup/$fn
+        touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		
+        ansible TEST-DOWN-ROOT -m shell -a "/home/tomcat/apache-tomcat-7.0.42/bin/shutdown.sh"
+        ansible TEST-DOWN-ROOT -m shell -a "rm -rf /home/tomcat/apache-tomcat-7.0.42/webapps/ROOT"
+        ansible TEST-DOWN-ROOT -m copy -a "src=$workspace/download_center/target/download_center.war dest=/home/tomcat/apache-tomcat-7.0.42/webapps/ROOT.war group=tomcat owner=tomcat"
+        ansible TEST-DOWN-TOMCAT -m shell -a "nohup /home/tomcat/apache-tomcat-7.0.42/bin/startup.sh &"
+    '''
+}

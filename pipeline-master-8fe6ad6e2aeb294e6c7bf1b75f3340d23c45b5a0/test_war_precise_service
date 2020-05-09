@@ -1,0 +1,41 @@
+node () {
+def workspace = pwd()
+def branch = 'test'
+
+stage 'pull'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+    }
+    
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+    
+    dir('precise_service'){
+        git branch: release_branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/precise_service.git'        
+    }
+    
+    
+stage 'build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+        cd $workspace/precise_service/precise_service-center
+       /usr/local/maven/bin/mvn clean install -U -Ptest
+    """
+
+stage 'deploy-edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=TEST
+        mo=test_precise_service
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy ccccab4b-7345-49b9-b97b-99a6ec18ebbe  http://10.0.2.9/$en/$mo/precise_service-center.war
+    '''
+}

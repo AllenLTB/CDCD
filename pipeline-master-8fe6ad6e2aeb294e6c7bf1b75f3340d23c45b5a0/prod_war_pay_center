@@ -1,0 +1,56 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'checkout'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/config.git'        
+	}
+
+    dir('parent'){
+        git branch: 'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'
+    }
+    
+
+    dir('pay_center'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/pay_center.git'
+    }
+    sh "cd $workspace/pay_center;git checkout $release_tag"
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+
+       cd $workspace/pay_center
+       /usr/local/maven/bin/mvn clean install -Pprod -U
+    """
+            
+stage 'check_snapshot'
+    def exitValue = sh(script: "ls $workspace/pay_center/paycenter-center/target/paycenter-center/WEB-INF/lib |grep 'SNAPSHOT.jar' |grep -v 'paycenter-schedule-1.0-SNAPSHOT.jar'", returnStatus: true)
+    echo "return exitValue :${exitValue}"
+    
+    if(exitValue == 0){
+        error("ERROR：此版本包含SNAPSHOT软件包，不允许使用SNAPSHOT")
+    }
+
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=prod
+    mo=prod_paycenter
+    workspace=/var/lib/jenkins/workspace/prod_war_pay_center
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		cd $workspace/pay_center/paycenter-center/target/paycenter-center
+		
+		/usr/java/jdk1.8.0_101/bin/jar -cfM0 $workspace/pay_center/paycenter-center/target/paycenter-center.war ./*
+		find $workspace/pay_center/paycenter-center/target/ -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		cp /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 11ed5567-800e-4ebe-a5a7-57d0e9c7bf3f  http://172.16.5.4/$en/$mo/paycenter-center.war
+    '''
+}

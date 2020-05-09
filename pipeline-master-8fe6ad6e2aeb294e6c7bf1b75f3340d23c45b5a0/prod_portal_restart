@@ -1,0 +1,11 @@
+node (){
+
+
+
+stage 'restart'
+sh"""
+ansible GD-RESTART -m service -a 'name=tomcat state=stopped'
+#ansible GD-RESTART -m service -a 'name=tomcat state=restarted'
+"""
+
+}

@@ -1,0 +1,36 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+	dir('common-kafka'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/common-kafka.git'
+    }  
+	dir('material-match'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/material-match.git'
+    } 
+    dir('timetask'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/match-timetask.git'
+    }
+
+
+stage 'Build'
+    sh"""
+	   cd $workspace/common-kafka
+       /usr/local/maven/bin/mvn clean install -Ppro
+	   cd $workspace/material-match/material-match-api
+       /usr/local/maven/bin/mvn clean install -Ppro
+       cd $workspace/material-match/material-match-center
+       /usr/local/maven/bin/mvn clean install -Ppro
+       cd $workspace/timetask
+       /usr/local/maven/bin/mvn clean install -Ppro
+         """
+stage 'PRE'
+    sh"""
+    rm -rf /var/lib/jenkins/workspace/prod-srm_match-timetask-step1/*
+    cp -f /var/lib/jenkins/workspace/prod-srm_match-timetask/timetask/target/match-timetask-1.0.0-SNAPSHOT.war /var/lib/jenkins/workspace/prod-srm_match-timetask-step1/
+    """
+}

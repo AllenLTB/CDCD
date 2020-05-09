@@ -1,0 +1,54 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'checkout'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/config.git'        
+	}
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+
+    dir('download_center'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/download_center.git'        
+    }
+    sh "cd $workspace/download_center;git checkout $release_tag"
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+
+        cd $workspace/download_center
+       /usr/local/maven/bin/mvn clean install -Pprod
+    """
+
+stage 'check_snapshot'
+    def exitValue = sh(script: "ls $workspace/download_center/target/download_center/WEB-INF/lib |grep 'SNAPSHOT.jar'", returnStatus: true)
+    echo "return exitValue :${exitValue}"
+    
+    if(exitValue == 0){
+        error("ERROR：此版本包含SNAPSHOT软件包，不允许使用SNAPSHOT")
+    }
+
+stage 'edas'
+    sh'''
+        JENKINS_NODE_COOKIE=dontKillMe
+        fn=$(date +%m%d%H%M)
+        en=prod
+        mo=prod_download_center
+
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+
+		ansible PROD-DOWN-ADMIN -m shell -a '/home/admin/apache-tomcat-8.5.33/bin/shutdown.sh'
+        ansible PROD-DOWN-ADMIN -m shell -a 'rm -rf /home/admin/apache-tomcat-8.5.33/webapps/ROOT*'
+        ansible PROD-DOWN-ROOT -m copy -a 'src=/jen_data/prod/prod_download_center/download_center.war  dest=/home/admin/apache-tomcat-8.5.33/webapps/ROOT.war owner=admin group=admin mode=0644'
+        ansible PROD-DOWN-ADMIN -m shell -a 'nohup /home/admin/apache-tomcat-8.5.33/bin/startup.sh &'
+    '''
+}

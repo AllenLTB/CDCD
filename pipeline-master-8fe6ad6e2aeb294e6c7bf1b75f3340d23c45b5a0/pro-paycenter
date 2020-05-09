@@ -1,0 +1,105 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+      dir('parent'){
+          git branch: 'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'
+    }
+     dir('base-api'){
+          git branch: 'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-api.git'
+    }
+     dir('base-center'){
+          git branch: 'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-center.git'
+    }
+    dir('electricity_supplier_order'){
+          git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/electricity_supplier_order.git'        
+    }
+     dir('electricity_supplier-pay'){
+          git branch: 'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/electricity_supplier-pay.git'
+    }
+    dir('business_plan'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_plan.git'        
+    }
+	dir('business_inquiry'){
+          git branch: 'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_inquiry.git'
+    }
+	dir('manage_user'){
+          git branch: 'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/manage_user.git'
+    }
+    dir('business_user'){
+          git branch:  'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_user.git'
+    }
+	dir('business_commodity'){
+          git branch: 'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_commodity.git'
+    }
+	dir('business_order'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_order.git'
+    }
+    dir('pay_center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/pay_center.git'
+    }
+    dir('paycenter-schedule'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/paycenter-schedule.git'
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+      cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/electricity_supplier_order
+       /usr/local/maven/bin/mvn clean install -Pprod
+      cd $workspace/electricity_supplier-pay
+       /usr/local/maven/bin/mvn clean install -Pprod
+      cd $workspace/business_plan
+       /usr/local/maven/bin/mvn clean install -Pprod
+	   cd $workspace/business_inquiry/business_inquiry-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/manage_user/manage_user-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/manage_user/manage_user-center
+       /usr/local/maven/bin/mvn clean install -Pprod
+	   cd $workspace/business_user
+       /usr/local/maven/bin/mvn clean install -Pprod
+	   cd $workspace/business_commodity/business_commodity-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+	   cd $workspace/business_order
+       /usr/local/maven/bin/mvn clean install -Pprod
+	   cd $workspace/pay_center
+       /usr/local/maven/bin/mvn clean install -Pprod -U
+       cd $workspace/paycenter-schedule
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/pay_center
+       /usr/local/maven/bin/mvn clean install -Pprod -U
+
+
+
+            """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=prod
+    mo=paycenter
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		cd /var/lib/jenkins/workspace/Pro_paycenter/pay_center/paycenter-center/target/paycenter-center
+		/usr/java/jdk1.8.0_101/bin/jar -cfM0 /var/lib/jenkins/workspace/Pro_paycenter/pay_center/paycenter-center/target/paycenter-center.war ./*
+		find /var/lib/jenkins/workspace/Pro_paycenter/pay_center/paycenter-center/target/ -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		cp /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 11ed5567-800e-4ebe-a5a7-57d0e9c7bf3f  http://172.16.5.4/$en/$mo/paycenter-center.war
+'''
+
+
+}

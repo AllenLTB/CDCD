@@ -1,0 +1,39 @@
+node ('master') {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+     dir('srm-parent'){
+          git branch: 'master' , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/srm-parent.git'
+    }
+
+
+
+
+stage 'Build'
+    sh"""
+	   cd $workspace/srm-parent/srm-common
+       /usr/local/maven/bin/mvn clean install
+       cd $workspace/srm-parent/srm-middle-parent/srm-middle-api
+       /usr/local/maven/bin/mvn clean install -Ppro
+       cd $workspace/srm-parent/srm-file-parent/srm-file-api
+       /usr/local/maven/bin/mvn clean install -Ppro
+       cd $workspace/srm-parent/srm-bus-parent/srm-bus-api
+       /usr/local/maven/bin/mvn clean install -Ppro
+       cd $workspace/srm-parent/srm-timetask
+       /usr/local/maven/bin/mvn clean install -Ppro
+
+
+
+            """
+stage 'PRE'
+    sh"""
+    rm -rf /var/lib/jenkins/workspace/prod-srmtimetask-step1/*
+    cp -f $workspace/srm-parent/srm-timetask/target/srm-timetask-0.0.1-SNAPSHOT.war /var/lib/jenkins/workspace/prod-srmtimetask-step1/
+    """
+
+
+}

@@ -1,0 +1,45 @@
+node () {
+def workspace = pwd()
+def branch = 'mvn_refactor'
+def CATALINA_HOME = '/taobao-tomcat/business_pay-center_war'
+
+
+
+ stage 'checkout'
+ 
+dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+	}
+
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+
+    dir('business_pay'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_pay.git'
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pdev
+
+        cd $workspace/business_pay/business_pay-center
+       /usr/local/maven/bin/mvn clean install -Pdev
+       """
+       
+
+
+stage 'tomcat'
+    sh"""
+        JENKINS_NODE_COOKIE=dontKillMe
+        
+        ${CATALINA_HOME}/bin/shutdown.sh
+        rm -rf ${CATALINA_HOME}/deploy/ROOT
+        unzip $workspace/business_pay/business_pay-center/target/business_pay-center.war -d ${CATALINA_HOME}/deploy/ROOT
+        ${CATALINA_HOME}/bin/startup.sh
+    """
+}

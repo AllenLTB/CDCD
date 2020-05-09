@@ -1,0 +1,55 @@
+node () {
+def workspace = pwd()
+def branch = 'test'
+
+stage 'pull'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+    }
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+
+    dir('manage_user'){
+        git branch: release_branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/manage_user.git'        
+    }
+    
+    dir('cgd_manager_user'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/cgd_manager_user.git'        
+    }
+
+stage 'build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+        cd $workspace/manage_user/manage_user-web
+       /usr/local/maven/bin/mvn clean install -Ptest
+    """
+
+stage 'deploy-edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=TEST
+        mo=test_manage_web
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 4ad48bf0-aaeb-458a-9c5f-f02f06b3ddbe http://10.0.2.9/$en/$mo/manage_user-web.war
+    '''
+    sh"""
+        sleep 60
+        cd  /jenkins/scripts/projects/cgd_manager_user/
+        rm -rf dev*
+        cp -rf $workspace/cgd_manager_user/html_module/dev .
+        tar -cf dev.tar.gz dev
+
+        ansible TEST-MANAGE-ROOT -m unarchive -a "src=/jenkins/scripts/projects/cgd_manager_user/dev.tar.gz dest=/tmp copy=yes mode=0755 owner=admin group=admin"
+        ansible TEST-MANAGE-ADMIN -m shell -a "rm -rf /home/admin/app/4ad48bf0-aaeb-458a-9c5f-f02f06b3ddbe/manage_user-web/operation/*"
+		ansible TEST-MANAGE-ADMIN -m shell -a '/bin/cp -R /tmp/dev/* /home/admin/app/4ad48bf0-aaeb-458a-9c5f-f02f06b3ddbe/manage_user-web/operation/'
+    """
+}

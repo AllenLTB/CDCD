@@ -1,0 +1,18 @@
+node () {
+def workspace = pwd()
+stage 'checkout'
+      dir('report_center'){
+          git branch: 'test', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/report_center.git'        
+    }
+    
+stage 'edas'
+sh"""
+       
+        cd $workspace/report_center/src/main/webapp/WEB-INF
+       
+        
+        ansible GD-APP -m copy -a "src=$workspace/report_center/src/main/webapp/WEB-INF/plugins dest=/home/admin/app/1cd8cec3-a3a6-471b-a876-be5bbcaa24e6/business_portal/WEB-INF/"
+         ansible GD-APP -m copy -a "src=$workspace/report_center/src/main/webapp/WEB-INF/reportlets dest=/home/admin/app/1cd8cec3-a3a6-471b-a876-be5bbcaa24e6/business_portal/WEB-INF/"
+          ansible GD-APP -m copy -a "src=$workspace/report_center/src/main/webapp/WEB-INF/resources dest=/home/admin/app/1cd8cec3-a3a6-471b-a876-be5bbcaa24e6/business_portal/WEB-INF/"
+"""        
+}

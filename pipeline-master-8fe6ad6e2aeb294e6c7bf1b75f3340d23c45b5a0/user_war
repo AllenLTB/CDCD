@@ -1,0 +1,40 @@
+node () {
+def workspace = pwd()
+def branch = 'mvn_refactor'
+def CATALINA_HOME = '/taobao-tomcat/user_war'
+
+
+
+ stage 'checkout'
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+
+    dir('user'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/user.git'        
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pdev
+
+        cd $workspace/user
+       /usr/local/maven/bin/mvn clean install -Pdev
+       """
+
+
+
+stage 'tomcat'
+    sh"""
+        JENKINS_NODE_COOKIE=dontKillMe
+
+        ${CATALINA_HOME}/bin/shutdown.sh
+        rm -rf ${CATALINA_HOME}/deploy/ROOT
+        unzip $workspace/user/target/user.war -d ${CATALINA_HOME}/deploy/ROOT
+        ${CATALINA_HOME}/bin/startup.sh
+    """
+}

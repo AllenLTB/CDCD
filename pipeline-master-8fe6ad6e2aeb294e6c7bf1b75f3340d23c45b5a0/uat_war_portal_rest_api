@@ -1,0 +1,63 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'pull'
+	dir('config'){
+    	git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+	}
+
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+
+    dir('business_portal'){
+        git branch: release_branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/portal_rest_api.git'
+    }
+    
+    dir('cgd_portal'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/cgd_portal.git'        
+    }
+    
+    dir('cgd_portal_vue'){
+       git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/cgd_portal_vue.git'        
+    }
+    
+    dir('gdfr'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/gdfr.git'        
+    }
+
+stage 'build'
+    sh"""
+        cd $workspace
+        cp -r ./gdfr $workspace/business_portal/src/main/webapp/WEB-INF/classes/
+
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Puat
+
+        cd $workspace/business_portal
+       /usr/local/maven/bin/mvn clean install -Puat     
+    """
+
+stage 'portal'
+    sh"""
+        cd $workspace/cgd_portal_vue
+        rm -rf dist
+        /usr/local/node-v8.9.4-linux-x64/bin/cnpm i        
+        /usr/local/node-v8.9.4-linux-x64/bin/npm run build
+    """
+       
+stage 'deploy-edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=UAT
+        mo=uat_portal_rest_api
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy e1e72a78-3b03-415e-b47c-23cf281e17a5 http://10.0.12.9/$en/$mo/portal_rest_api.war
+    '''
+}

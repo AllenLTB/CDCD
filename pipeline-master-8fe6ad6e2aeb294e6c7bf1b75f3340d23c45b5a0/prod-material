@@ -1,0 +1,40 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+	dir('common-kafka'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/common-kafka.git'
+    }
+    dir('user-module-api'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/user-module-api.git'
+    }
+	dir('invoke-bus-server-api'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/invoke-bus-server-api.git'
+    }
+     dir('material-match'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/material-match.git'
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/common-kafka
+       /usr/local/maven/bin/mvn clean install
+        cd $workspace/user-module-api
+       /usr/local/maven/bin/mvn clean install
+	   cd $workspace/invoke-bus-server-api
+       /usr/local/maven/bin/mvn clean install 
+       cd $workspace/material-match
+       /usr/local/maven/bin/mvn clean install -Ppro
+         """
+stage 'PRE'
+    sh"""
+    rm -rf /var/lib/jenkins/workspace/prod-srm_material_step1/*
+    cp -f $workspace/material-match/material-match-server/target/material-match-server.war /var/lib/jenkins/workspace/prod-srm_material_step1/
+    """
+}

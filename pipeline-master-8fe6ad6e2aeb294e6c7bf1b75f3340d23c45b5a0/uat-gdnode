@@ -1,0 +1,39 @@
+node ('master') {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+    dir('connect-cas'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/connect-cas.git'
+    }
+    dir('gd_node'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/gd_node.git'
+    }
+
+
+
+stage 'Build'
+    sh'''
+    cd /var/lib/jenkins/workspace/uat-gdnode
+    rm -f source.tar.gz
+    tar -zcf source.tar.gz ./*
+    '''
+    stash includes: '*.tar.gz', name: 'source'
+}
+node ('uat-cas') {
+stage 'Deploy'
+    unstash 'source'
+    sh'''
+    tar -zxf source.tar.gz
+    cd gd_node
+    npm install --unsafe-perm
+    cd /jenkins/workspace/uat-gdnode/
+    rm -rf /mydata/website/node/gd_node
+    cp -r ./gd_node /mydata/website/node/
+    cd /mydata/website/node/gd_node
+    
+    '''
+}

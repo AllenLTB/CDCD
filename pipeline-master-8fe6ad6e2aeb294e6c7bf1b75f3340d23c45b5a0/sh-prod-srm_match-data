@@ -1,0 +1,35 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+	dir('common-kafka'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/common-kafka.git'
+    }  
+	dir('invoke-bus-server-api'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/invoke-bus-server-api.git'
+    }
+     dir('match-data'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/match-data.git'
+    }
+
+
+
+stage 'Build'
+    sh"""
+	   cd $workspace/common-kafka
+       /usr/local/maven/bin/mvn clean install -U -X
+	   cd $workspace/invoke-bus-server-api
+       /usr/local/maven/bin/mvn clean install -U -X
+       cd $workspace/match-data
+       /usr/local/maven/bin/mvn clean install -Pinner -X -U
+         """
+stage 'PRE'
+    sh"""
+    rm -rf /root/.jenkins/workspace/prod-srm_match-data-step1/*
+    cp -f $workspace/match-data/match-data-server/target/match-data-server.war /root/.jenkins/workspace/prod-srm_match-data-step1/
+    """
+}

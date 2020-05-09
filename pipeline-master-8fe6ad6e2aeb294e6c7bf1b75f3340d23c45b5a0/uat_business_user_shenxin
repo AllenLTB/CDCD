@@ -1,0 +1,103 @@
+node () {
+def workspace = pwd()
+
+
+
+
+ stage 'checkout'
+
+     dir('parent'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+     dir('base-api'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-api.git'        
+    }
+     dir('base-center'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-center.git'        
+    }
+
+    
+      dir('workflow'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/workflow.git'        
+    }
+     dir('electricity_supplier'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/electricity_supplier.git'        
+    }
+
+    
+    dir('notify'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/notify.git' 
+          
+    }
+     dir('business_user'){
+          git branch:  'feature_gd/GD-RE-2019.09.15', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_user.git'        
+    }
+     dir('manage_user'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/manage_user.git'        
+    }
+    dir('business_indicators'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_indicators.git'        
+    }
+
+     dir('user'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/user.git'        
+    }
+
+
+
+    
+           
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Puat
+
+       cd $workspace/workflow
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/electricity_supplier
+       /usr/local/maven/bin/mvn clean install -Puat  
+
+       cd $workspace/notify
+       /usr/local/maven/bin/mvn clean install -Puat 
+
+       cd $workspace/manage_user
+       /usr/local/maven/bin/mvn clean install -Puat       
+       
+       
+        cd $workspace/business_user
+       /usr/local/maven/bin/mvn clean install -Puat -Dmaven.test.skip=true
+
+        cd $workspace/business_indicators
+       /usr/local/maven/bin/mvn clean install -Puat
+
+        cd $workspace/user
+       /usr/local/maven/bin/mvn clean install -Puat
+
+      
+      
+       
+       
+              
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=UAT
+    mo=uat_business_user
+
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 243806c1-9d3d-4fcb-a2fd-1947e18f4ab6 http://10.0.12.9/$en/$mo/user.war
+'''
+
+
+
+}

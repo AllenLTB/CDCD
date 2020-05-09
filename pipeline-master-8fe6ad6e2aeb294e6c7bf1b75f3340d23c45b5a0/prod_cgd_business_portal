@@ -1,0 +1,229 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+ stage 'checkout'
+
+    			dir('parent'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+    			dir('base-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-api.git'        
+    }
+		      dir('base-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-center.git'        
+    }
+					dir('search'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/search.git'        
+    }
+ 					dir('notify'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/notify.git'        
+    }
+   			  dir('electricity_supplier'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/electricity_supplier.git'        
+    }
+          dir('electricity_supplier_order'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/electricity_supplier_order.git'        
+    }
+   			  dir('business_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_user.git'        
+    }
+          dir('electricity_supplier-pay'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/electricity_supplier-pay.git'        
+    } 
+    dir('business_commodity'){
+          git branch:   branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_commodity.git'
+        }
+          dir('cgd_business_commodity'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/cgd_business_commodity.git'        
+    }  
+          dir('business_order'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_order.git'        
+    }
+     			dir('manage_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/manage_user.git'        
+    }
+    		  dir('business_pay'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_pay.git'        
+    }
+          dir('control-jump'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/control-jump.git'        
+    }   
+         dir('business_plan'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_plan.git'        
+    } 
+         dir('business_inquiry'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_inquiry.git'        
+    } 
+     	 dir('control_jump_order'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/control_jump_order.git'        
+    }
+          dir('control_jump_plan'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/control_jump_plan.git'        
+    }
+         dir('control_jump_commodity'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/control_jump_commodity.git'        
+    }
+          dir('control_jump-inquiry'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/control_jump-inquiry.git'        
+    }
+    
+            dir('control-jump_pay'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/control-jump_pay.git'        
+    }
+    
+          dir('business_portal'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_portal.git'        
+    }   
+          dir('cgd_portal'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/cgd_portal.git'        
+    }
+     			dir('cgd_portal_vue'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/cgd_portal_vue.git'        
+    }
+          dir('business_indicators'){
+          git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_indicators.git'        
+    }
+           dir('report_center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/report_center.git'        
+    }
+            dir('new_report'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/new_report.git'        
+    }
+            dir('control-jump_payCenter'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/control-jump_payCenter.git'        
+    }
+        dir('pay_center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/pay_center.git'
+    }
+    dir('gdfr'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/gdfr.git'        
+    }
+    dir('license'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/license.git'        
+    }
+
+
+
+           
+stage 'Build'
+    sh"""
+    
+        cd $workspace
+        cp -r ./gdfr $workspace/business_portal/src/main/webapp/WEB-INF/classes/
+        cd $workspace/report_center/src/main/webapp/WEB-INF
+        cp -r ./plugins $workspace/business_portal/src/main/webapp/WEB-INF/
+        cp -r ./reportlets $workspace/business_portal/src/main/webapp/WEB-INF/
+        cp -r ./resources $workspace/business_portal/src/main/webapp/WEB-INF/
+        
+        cp $workspace/license/license.lic $workspace/business_portal/src/main/webapp/WEB-INF/lib/
+
+       cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/search
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/notify
+       /usr/local/maven/bin/mvn clean install -Pprod 
+        cd $workspace/electricity_supplier
+       /usr/local/maven/bin/mvn clean install -Pprod  
+        cd $workspace/electricity_supplier_order
+       /usr/local/maven/bin/mvn clean install -Pprod 
+        cd $workspace/business_user
+       /usr/local/maven/bin/mvn clean install -Pprod 
+        cd $workspace/electricity_supplier-pay
+       /usr/local/maven/bin/mvn clean install -Pprod 
+        cd $workspace/manage_user/manage_user-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/manage_user/manage_user-center
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/pay_center/paycenter-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/business_pay/business_pay-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/business_commodity/business_commodity-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/cgd_business_commodity/cgd_business_commodity-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/business_order
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/business_plan/business_plan-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/business_inquiry/business_inquiry-api
+       /usr/local/maven/bin/mvn clean install -Pprod  
+       
+        cd $workspace/business_indicators
+        /usr/local/maven/bin/mvn clean install -Pprod
+        
+        cd $workspace/control-jump
+       /usr/local/maven/bin/mvn clean install -Pprod
+    
+        cd $workspace/control_jump_order
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/control_jump_plan
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/control_jump_commodity
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/control_jump-inquiry
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/control-jump_pay
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/new_report
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/control-jump_payCenter
+       /usr/local/maven/bin/mvn clean install -Pprod
+
+        cd $workspace/report_center
+       /usr/local/maven/bin/mvn clean install -Pprod
+
+        cd $workspace/business_portal
+       /usr/local/maven/bin/mvn clean install -Pprod     
+             
+              
+       """
+       
+stage 'portal'
+    sh"""
+        pwd
+        cd $workspace/cgd_portal_vue
+        pwd
+        rm -rf dist
+        /usr/local/node-v8.9.4-linux-x64/bin/cnpm i        
+        /usr/local/node-v8.9.4-linux-x64/bin/npm run build
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=prod
+    mo=business_portal
+
+		touch /jen_data/$en/$mo/q.war
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+##mv /jenkins/scripts/projects/cgd_portal_deploy/cgd_portal_deploy /jenkins/scripts/projects/cgd_portal_deploy/backup/cgd_portal_deploy$fn
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy c382d5af-232b-4d83-b5e2-c1a04babb345 http://172.16.5.4/$en/$mo/business_portal.war
+'''
+
+sh"""
+sleep 30
+
+        cd  /jenkins/scripts/projects/cgd_portal_deploy
+        rm -rf cgd_portal_deploy.tar
+        rm -rf cgd_portal_deploy
+        mkdir cgd_portal_deploy
+        
+        cp -R $workspace/cgd_portal/dev/* cgd_portal_deploy
+        cp -R $workspace/cgd_portal_vue/dist cgd_portal_deploy
+         
+       ./portal_static_web.sh
+           
+       """
+
+}
+

@@ -1,0 +1,103 @@
+node () {
+def workspace = pwd()
+
+
+
+
+ stage 'checkout'
+      dir('parent'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+     dir('base-api'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-api.git'        
+    }
+     dir('base-center'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/base-center.git'        
+    }
+      dir('electricity_supplier-pay'){
+          git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/electricity_supplier-pay.git'        
+    }
+    dir('business_commodity'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_commodity.git'        
+    }
+    dir('business_user'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_user.git'        
+    }
+    dir('manage_user'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/manage_user.git'        
+    }
+    dir('business_order'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_order.git'        
+    }
+    dir('business_inquiry'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/business_inquiry.git'        
+    }
+    dir('new_report'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/new_report.git'        
+    }
+    dir('report-schedule'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/report-schedule.git'        
+    }
+    dir('report_forms_cpt'){
+          git branch:  'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/report_forms_cpt.git'        
+    }
+
+    
+
+    
+    
+               
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod 
+      cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/electricity_supplier-pay/electricity_supplier_pay-api
+       /usr/local/maven/bin/mvn clean install -Pprod 
+       cd $workspace/manage_user/manage_user-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/business_user/business_user-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/business_commodity/business_commodity-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/business_order/business_order-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/business_inquiry/business_inquiry-api
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/new_report
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/report-schedule
+       /usr/local/maven/bin/mvn clean install -Pprod
+       cd $workspace/new_report
+       /usr/local/maven/bin/mvn clean install -Pprod
+       
+   
+       
+            """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=prod
+    mo=prod_new_report
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		cd /var/lib/jenkins/workspace/prod_new_report/new_report/new_report-center/target/new_report-center/WEB-INF/classes/reportlets/report_forms_cpt/
+		rm -rf ./*
+		cp -r /var/lib/jenkins/workspace/prod_new_report/report_forms_cpt/* ./
+		cd /var/lib/jenkins/workspace/prod_new_report/new_report/new_report-center/target/new_report-center
+		mkdir -p WEB-INF/classes/WEB-INF/lib
+		cp -i WEB-INF/lib/fr-* WEB-INF/classes/WEB-INF/lib/
+		rm -f ../*.war 
+		/usr/java/jdk1.8.0_101/bin/jar -cfM0 /var/lib/jenkins/workspace/prod_new_report/new_report/new_report-center/target/new_report-center.war ./*
+		find /var/lib/jenkins/workspace/prod_new_report/new_report/new_report-center/target/ -name new_report-center.war |xargs -i cp {} /jen_data/$en/$mo/
+		cp /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+        chmod 777 /jen_data/$en/$mo/new_report-center.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy c471e136-3542-4d62-9f59-70f920afa593  http://172.16.5.4/$en/$mo/new_report-center.war
+'''
+
+
+}  

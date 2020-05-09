@@ -1,0 +1,48 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'checkout'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+	}
+	
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+
+    dir('workflow'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/workflow.git'        
+    }
+    sh "cd $workspace/workflow;git checkout $release_tag"
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pnewuat 
+
+        cd $workspace/workflow/workflow-center
+       /usr/local/maven/bin/mvn clean install -Pnewuat  
+    """
+
+stage 'check_snapshot'
+    def exitValue = sh(script: "ls $workspace/workflow/target/workflow/WEB-INF/lib |grep 'SNAPSHOT.jar'", returnStatus: true)
+    echo "return exitValue :${exitValue}"
+    if(exitValue == 0){
+        error("ERROR：此版本包含SNAPSHOT软件包，不允许使用SNAPSHOT")
+    }
+
+stage 'deploy-edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=NEWUAT
+        mo=newuat_workflow
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/*.war
+		java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 56eea78a-3f3e-424f-aaf0-1a3d39766027 http://10.0.12.9/$en/$mo/workflow-center.war
+    '''
+}

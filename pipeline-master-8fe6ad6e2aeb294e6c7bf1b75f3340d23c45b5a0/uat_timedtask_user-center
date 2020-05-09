@@ -1,0 +1,70 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+ stage 'checkout'
+
+     dir('parent'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+     dir('base-api'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-api.git'        
+    }
+     dir('base-center'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-center.git'        
+    }
+     dir('business_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_user.git'        
+    }
+
+     dir('timedtask_user'){
+          git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/timedtask_user.git'        
+    }
+
+          
+                   
+          
+           
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install -Puat
+        cd $workspace/base-center
+       /usr/local/maven/bin/mvn clean install -Puat
+				cd $workspace/business_user/business_user-api
+       /usr/local/maven/bin/mvn clean install -Puat
+				cd $workspace/timedtask_user/
+       /usr/local/maven/bin/mvn clean install -Puat
+
+
+ 
+       
+              
+       """
+
+stage 'edas'
+sh'''
+    fn=$(date +%m%d%H%M)
+    en=UAT
+    mo=uat_timedtask_user-center
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv  /jen_data/$en/$mo/timedtask_user-center-1.0.0-SNAPSHOT.jar /jen_data/$en/$mo/backup/$fn/
+		cp /usr/local/maven/repository/com/cgd/timedtask/timedtask_user-center/1.0.0-SNAPSHOT/timedtask_user-center-1.0.0-SNAPSHOT.jar   /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/timedtask_user-center-1.0.0-SNAPSHOT.jar
+        scp /jen_data//$en/$mo/timedtask_user-center-1.0.0-SNAPSHOT.jar root@10.0.12.252:/home/admin/timeUserJob/
+        ssh  10.0.12.252 'chown -R admin:admin /home/admin/timeUserJob/timedtask_user-center-1.0.0-SNAPSHOT.jar'
+		ssh  10.0.12.252 'su - admin -c /home/admin/timeUserJob/restartTimedtask.sh'
+
+
+
+
+
+
+	
+'''
+
+
+}

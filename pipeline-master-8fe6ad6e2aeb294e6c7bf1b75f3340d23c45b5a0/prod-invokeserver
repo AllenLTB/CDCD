@@ -1,0 +1,60 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+      dir('parent'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'
+    }
+     dir('base-api'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/base-api.git'
+    }
+	dir('manage_user'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/manage_user.git'
+    }
+    dir('business_user'){
+          git branch:  branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/business_user.git'
+    }
+	dir('invoke-bus-server-api'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/invoke-bus-server-api.git'
+    }
+     dir('invoke-bus-server'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/invoke-bus-server.git'
+    }
+     dir('platform-utils'){
+          git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/gd_paybalance_dev/platform-utils.git'
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install 
+        cd $workspace/base-api
+       /usr/local/maven/bin/mvn clean install 
+       cd $workspace/manage_user/manage_user-api
+       /usr/local/maven/bin/mvn clean install 
+	   cd $workspace/business_user/business_user-api
+       /usr/local/maven/bin/mvn clean install 
+       cd $workspace/platform-utils
+       /usr/local/maven/bin/mvn clean install 
+	   cd $workspace/invoke-bus-server-api
+       /usr/local/maven/bin/mvn clean install 
+	   cd $workspace/invoke-bus-server
+       /usr/local/maven/bin/mvn clean install -Ppro 
+
+            """
+stage 'EDAS'
+    sh'''
+    fn=$(date +%m%d%H%M)
+    en=PROD
+    mo=prod-invokeserver
+    mkdir -p /jen_data/$en/$mo/backup/$fn
+    find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+    java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy b6f08008-639f-42a0-a635-f46a426f682a  http://172.16.5.4/$en/$mo/invoke-bus-server-1.0-SNAPSHOT.war
+    '''
+}

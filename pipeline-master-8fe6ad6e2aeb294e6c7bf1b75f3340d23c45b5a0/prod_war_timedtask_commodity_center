@@ -1,0 +1,44 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'checkout'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/config.git'        
+	}
+	
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base/parent.git'        
+    }
+
+    dir('timedtask_commodity'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce/timedtask_commodity.git'        
+    }
+    sh "cd $workspace/timedtask_commodity;git checkout $release_tag"
+  
+stage 'Build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Pprod
+       
+        cd $workspace/timedtask_commodity
+       /usr/local/maven/bin/mvn clean install -Pprod 
+    """
+
+stage 'edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=prod
+        mo=prod_timedtask_commodity_center
+        JENKINS_NODE_COOKIE=dontKillMe
+
+        mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.jar
+		mv  /jen_data/$en/$mo/*.jar /jen_data/$en/$mo/backup/$fn/
+		cp /usr/local/maven/repository/com/cgd/timedtask/timedtask_commodity-center/1.0.0-SNAPSHOT/timedtask_commodity-center-1.0.0-SNAPSHOT.jar  /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/timedtask_commodity-center-1.0.0-SNAPSHOT.jar
+
+		ansible PROD-TIME-ROOT -m copy -a "src=/jen_data/$en/$mo/timedtask_commodity-center-1.0.0-SNAPSHOT.jar dest=/home/admin/timeJob/  mode=0755 owner=admin group=admin"
+        ansible PROD-TIME-ADMIN -m shell -a "/home/admin/timeJob/restartTimedtask.sh restart"
+    '''
+}

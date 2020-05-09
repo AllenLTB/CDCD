@@ -1,0 +1,31 @@
+node () {
+def workspace = pwd()
+
+stage 'checkout'
+    dir('cgd_portal_vue'){
+          git branch:  'dev', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/cgd_portal_vue.git'        
+    }
+
+stage 'Build'
+    sh"""
+        pwd
+        cd $workspace/cgd_portal_vue
+        pwd
+        rm -rf dist
+        /usr/local/node-v8.9.4-linux-x64/bin/cnpm i        
+        /usr/local/node-v8.9.4-linux-x64/bin/npm run build
+       """
+       
+stage 'push'
+    sh """
+        cd $workspace/cgd_portal_vue
+        tar -cf dist.tar dist
+        
+		ansible TEST-PORTAL-ADMIN -m shell -a 'rm -rf /tmp/dist'		
+		ansible TEST-PORTAL-ROOT -m unarchive -a 'src=/var/lib/jenkins/workspace/test_cgd_portal_vue/cgd_portal_vue/dist.tar dest=/tmp/ copy=yes mode=0755 owner=admin group=admin'
+		ansible TEST-PORTAL-ADMIN -m shell -a 'rm -rf /home/admin/app/c65f04e2-7320-4fcd-aef8-4823494b8ef0/business_portal/dist'
+		ansible TEST-PORTAL-ADMIN -m shell -a '/bin/cp -R /tmp/dist /home/admin/app/c65f04e2-7320-4fcd-aef8-4823494b8ef0/business_portal'
+
+        echo "static publish completely!"
+    """
+}

@@ -1,0 +1,35 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+
+
+
+ stage 'checkout'
+    dir('team'){
+        git branch: branch , credentialsId: 'jenkins', url: 'http://47.94.250.239/SRM/teamwork.git'
+    }
+
+
+
+stage 'Build'
+    sh"""
+        cd $workspace/team
+       /usr/local/maven/bin/mvn clean install -Pprod
+        cd $workspace/team/teamwork-bus/teamwork-bus-server
+       /usr/local/maven/bin/mvn clean install -Pprod
+
+
+
+            """
+stage 'EDAS'
+    sh'''
+    fn=$(date +%m%d%H%M)
+    en=PROD
+    mo=test_teamwork-bus
+    mkdir -p /jen_data/$en/$mo/backup/$fn
+    touch /jen_data/$en/$mo/q.war
+    find $workspace -name *.war |xargs -i cp {} /jen_data/$en/$mo/
+    java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 31a944f8-a214-4b69-923e-8cbc7e0b165e http://172.16.5.4/$en/$mo/teamwork-bus-server.war
+    '''
+}

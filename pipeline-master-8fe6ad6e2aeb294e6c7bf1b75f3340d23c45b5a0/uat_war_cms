@@ -1,0 +1,30 @@
+node () {
+def workspace = pwd()
+def branch = 'master'
+
+stage 'pull'
+    dir('cms'){
+        git branch: 'cgd_prod', credentialsId: 'ZT', url: 'http://59.110.15.209/ZT/CMS/cms.git'         
+    }
+
+stage 'build'
+    sh"""
+        java -version 
+        cd $workspace/cms
+        /usr/local/maven/bin/mvn clean install -Puat
+    """
+
+stage 'deploy-edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=UAT
+        mo=uat_cms
+
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.war
+		mv /jen_data/$en/$mo/*.war /jen_data/$en/$mo/backup/$fn/
+		cp -vp ${workspace}/cms/MCMS/target/ms-mcms.war /jen_data/$en/$mo/
+		chmod 777 /jen_data/$en/$mo/ms-mcms.war
+	    java -jar /jen_data/API/edas_unicom_api_1.0.jar test deploy 9a339de5-ec89-4f26-9b3d-f5dbb34b3d19 http://10.0.12.9/$en/$mo/ms-mcms.war
+    '''
+}

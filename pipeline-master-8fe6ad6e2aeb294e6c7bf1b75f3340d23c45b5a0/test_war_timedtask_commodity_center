@@ -1,0 +1,43 @@
+node () {
+def workspace = pwd()
+def branch = 'test'
+
+stage 'pull'
+    dir('config'){
+        git branch: 'master', credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/config.git'        
+    }
+    
+    dir('parent'){
+        git branch: branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-base_dev/parent.git'        
+    }
+
+    dir('timedtask_commodity'){
+        git branch: release_branch, credentialsId: 'jenkins', url: 'http://47.94.250.239/cgd-eCommerce_dev/timedtask_commodity.git'        
+    }
+
+stage 'build'
+    sh"""
+        cd $workspace/parent
+       /usr/local/maven/bin/mvn clean install -Ptest
+
+        cd $workspace/timedtask_commodity
+       /usr/local/maven/bin/mvn clean install -Ptest
+    """
+
+stage 'deploy-edas'
+    sh'''
+        fn=$(date +%m%d%H%M)
+        en=TEST
+        mo=test_timedtask_commodity_center
+        JENKINS_NODE_COOKIE=dontKillMe
+		
+		mkdir -p /jen_data/$en/$mo/backup/$fn
+		touch /jen_data/$en/$mo/q.jar
+		mv  /jen_data/$en/$mo/*.jar /jen_data/$en/$mo/backup/$fn/
+		
+		cp /usr/local/maven/repository/com/cgd/timedtask/timedtask_commodity-center/1.0.0-SNAPSHOT/timedtask_commodity-center-1.0.0-SNAPSHOT.jar  /jen_data/$en/$mo/
+		
+		ansible TEST-TIME-ROOT -m copy -a "src=/jen_data/$en/$mo/timedtask_commodity-center-1.0.0-SNAPSHOT.jar dest=/home/admin/testJob owner=admin group=admin"
+		ansible TEST-TIME-ADMIN -m shell -a "/home/admin/testJob/restartTimedtask.sh restart"
+    '''
+}
