@@ -857,7 +857,7 @@ pipeline {
 
 ## FQA
 
-## 查看项目project id的方法
+### 查看项目project id的方法
 
 方法1：去GitLab上查看（最方便快捷）
 
@@ -865,10 +865,10 @@ pipeline {
 
 方法2：发送get请求
 
-- 查询指定项目：https://gitlab.com/api/v3/projects?private_token=xxxx&search=projectname
-- 查询完整列表：https://gitlab.com/api/v3/projects?per_page=500&private_token=xxxx
+- 查询指定项目：https://gitlab-netadm.leju.com/api/v3/projects?private_token=xxxx&search=projectname
+- 查询完整列表：https://gitlab-netadm.leju.com/api/v3/projects?per_page=500&private_token=xxxx
 
-## API版本不匹配
+### API版本不匹配
 
 执行流水线报错如下：
 

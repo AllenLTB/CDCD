@@ -753,6 +753,8 @@ pipeline {
 
 **[Post the build status to a commit](https://docs.gitlab.com/ee/api/commits.html#post-the-build-status-to-a-commit)**
 
+你的GitLab也有这个文档`<你的gitlab地址>/help/api/commits.html#post-the-build-status-to-a-commit`
+
 `POST /projects/:id/statuses/:sha`
 
 | Attribute           | Type           | Required | Description                                                  |
