@@ -19,9 +19,9 @@ pipeline {
 		buildDiscarder(logRotator(numToKeepStr: '10'))
 	}
 	parameters {
-		choice(name: 'repository', choices: 'jenkinslib\nsimple-java-maven-app\nTestapp1', description: 'Ñ¡ÔñÖÆÆ·¿â')
-		string(name: 'refBranchName', defaultValue: '', description: '»ùÓÚÄÄ¸ö·ÖÖ§´´½¨ÐÂ·ÖÖ§')
-		string(name: 'newBranchName', defaultValue: '', description: 'ÐÂ·ÖÖ§µÄÃû×Ö')
+		choice(name: 'repository', choices: 'jenkinslib\nsimple-java-maven-app\nTestapp1', description: '选择仓库')
+		string(name: 'refBranchName', defaultValue: '', description: '基于此分支创建新分支')
+		string(name: 'newBranchName', defaultValue: '', description: '新分支的名字')
 	}
     stages {
 		stage('CreateNewBranch') {
@@ -105,3 +105,4 @@ def CreateBranch(projectId,newBranchName,refBranchName) {
 ```
 
 ![image-20200510142612688](.assets/image-20200510142612688.png)
+
